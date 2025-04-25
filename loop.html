@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK Hospital Billing System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #343a40;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        header {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        header a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            margin: 0 15px;
+            transition: color 0.3s;
+        }
+        header a:hover {
+            color: #ffeb3b;
+        }
+        form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 350px;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 350px;
+            display: none;
+        }
+        .summary p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html">Home</a>
+    <a href="last.html">Dashboard</a>
+    <div>RK Hospital</div>
+</header>
+
+<h1>R K Hospital Billing System</h1>
+
+<form id="patientForm">
+    <label for="patientName">Patient Name:</label>
+    <input type="text" id="patientName" required>
+
+    <label for="medicineName">Medicine Name:</label>
+    <input type="text" id="medicineName" required>
+
+    <label for="quantity">Quantity:</label>
+    <input type="number" id="quantity" required>
+
+    <label for="price">Price per Unit (₹):</label>
+    <input type="number" id="price" required>
+
+    <label for="discount">Discount (%):</label>
+    <input type="number" id="discount" value="0" required>
+
+    <label for="testType">Test Type (e.g., X-ray, Blood Test):</label>
+    <input type="text" id="testType">
+
+    <label for="testCost">Test Cost (₹):</label>
+    <input type="number" id="testCost" value="0">
+
+    <button type="submit">Add Medicine</button>
+</form>
+
+<h2>Patient List</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Patient Name</th>
+            <th>Medicine Name</th>
+            <th>Total Bill (₹)</th>
+            <th>Test Type</th>
+            <th>Total Amount Payable (₹)</th>
+        </tr>
+    </thead>
+    <tbody id="patientList">
+    </tbody>
+</table>
+
+<div class="summary" id="summary">
+    <h3>Bill Summary</h3>
+    <p><strong>Patient Name:</strong> <span id="summaryPatientName"></span></p>
+    <p><strong>Total Medicine Cost (₹):</strong> ₹<span id="totalMedicineCost">0.00</span></p>
+    <p><strong>Total Test Cost (₹):</strong> ₹<span id="totalTestCost">0.00</span></p>
+    <p><strong>Total Discount (₹):</strong> ₹<span id="totalDiscount">0.00</span></p>
+    <p><strong>Total Amount Payable (₹):</strong> ₹<span id="totalAmountPayable">0.00</span></p>
+    <button id="printInvoiceButton">Print Invoice</button>
+</div>
+
+<script>
+    let totalMedicineCost = 0;
+    let totalTestCost = 0;
+    let totalDiscount = 0;
+
+    document.getElementById('patientForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const patientName = document.getElementById('patientName').value;
+        const medicineName = document.getElementById('medicineName').value;
+        const quantity = parseFloat(document.getElementById('quantity').value);
+        const price = parseFloat(document.getElementById('price').value);
+        const discount = parseFloat(document.getElementById('discount').value);
+        const testType = document.getElementById('testType').value;
+        const testCost = parseFloat(document.getElementById('testCost').value);
+
+        const itemTotalPrice = quantity * price;
+        const itemTotalDiscount = (discount / 100) * itemTotalPrice;
+        const itemTotalBill = itemTotalPrice - itemTotalDiscount;
+
+        totalMedicineCost += itemTotalPrice;
+        totalDiscount += itemTotalDiscount;
+        totalTestCost += testCost;
+
+        const patientRow = document.createElement('tr');
+        patientRow.innerHTML = `
+            <td>${patientName}</td>
+            <td>${medicineName}</td>
+            <td>₹${itemTotalBill.toFixed(2)}</td>
+            <td>${testType}</td>
+            <td>₹${(itemTotalBill + testCost - itemTotalDiscount).toFixed(2)}</td>
+        `;
+        document.getElementById('patientList').appendChild(patientRow);
+
+        document.getElementById('summaryPatientName').textContent = patientName;
+        document.getElementById('totalMedicineCost').textContent = totalMedicineCost.toFixed(2);
+        document.getElementById('totalTestCost').textContent = totalTestCost.toFixed(2);
+        document.getElementById('totalDiscount').textContent = totalDiscount.toFixed(2);
+        document.getElementById('totalAmountPayable').textContent = (totalMedicineCost + totalTestCost - totalDiscount).toFixed(2);
+
+        document.getElementById('summary').style.display = 'block';
+
+        document.getElementById('patientForm').reset();
+    });
+
+    document.getElementById('printInvoiceButton').addEventListener('click', function() {
+        window.print();
+    });
+</script>
+
+</body>
+</html>

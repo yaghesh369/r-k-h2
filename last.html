@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK Hospital</title>
+    <link rel="stylesheet" href="last.css">
+</head>
+<body>
+    <header>
+        <h1>RK Hospital</h1>
+    </header>
+    <nav>
+        <a href="#patients">Patients</a>
+        <a href="#doctors">Doctors</a>
+        <a href="#appointments">Appointments</a>
+        <a href="loop.html">Bill</a>
+    </nav>
+    <div class="container">
+        <section id="patients" class="section">
+            <h2>Patient Records</h2>
+            <p>Manage patient information including contact details, medical history, and more.</p>
+            <button id="add-patient-button">Add New Patient</button>
+            <table id="patient-table" border="1">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Contact</th>
+                        <th>Medical History</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section id="doctors" class="section">
+            <h2>Doctor Schedules</h2>
+            <p>View and manage doctor availability and schedules.</p>
+            <div class="doctor-schedule" id="doctor-schedule-list">
+                <h3>Doctors' Schedules</h3>
+                <ul id="doctor-list"></ul>
+            </div>
+        </section>
+
+        <section id="appointments" class="section">
+            <h2>Appointments</h2>
+            <p>Book, view, and manage appointments with doctors.</p>
+            <form class="appointment-form" id="appointment-form">
+                <label for="patient-name">Patient Name</label>
+                <input type="text" id="patient-name" placeholder="Enter patient name" required>
+
+                <label for="age">Patient Age</label>
+                <input type="number" id="age" placeholder="Enter patient age" required>
+
+                <label for="mobile">Mobile Number</label>
+                <input type="tel" id="mobile" placeholder="Enter mobile number" required>
+
+                <label for="doctor">Select Doctor</label>
+                <select id="doctor" required>
+                    <option value="Dr. Sharma">Dr. Sharma</option>
+                    <option value="Dr. Patel">Dr. Patel</option>
+                </select>
+
+                <label for="date">Appointment Date</label>
+                <input type="date" id="date" required>
+
+                <button type="submit">Book Appointment</button>
+            </form>
+        </section>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
+      
+        // Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyDFa3khphs5iOnh3_RfWF1OgZQFMrytdBg",
+          authDomain: "r-k-hospital.firebaseapp.com",
+          databaseURL: "https://r-k-hospital-default-rtdb.firebaseio.com",
+          projectId: "r-k-hospital",
+          storageBucket: "r-k-hospital.appspot.com",
+          messagingSenderId: "524845915989",
+          appId: "1:524845915989:web:25dbd2d1729ad2f67e19dc",
+          measurementId: "G-43XH6YRG0G"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        document.getElementById('appointment-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const patientName = document.getElementById('patient-name').value;
+            const age = document.getElementById('age').value;
+            const mobile = document.getElementById('mobile').value;
+            const doctor = document.getElementById('doctor').value;
+            const date = document.getElementById('date').value;
+
+            const newAppointmentRef = push(ref(db, 'appointments'));
+            set(newAppointmentRef, {
+                patientName, age, mobile, doctor, date
+            }).then(() => {
+                alert('Appointment added successfully!');
+                document.getElementById('appointment-form').reset();
+                loadAppointments();
+            }).catch(error => console.error('Error adding appointment:', error));
+        });
+
+        function loadAppointments() {
+            onValue(ref(db, 'appointments'), snapshot => {
+                const data = snapshot.val();
+                const doctorList = document.getElementById('doctor-list');
+                doctorList.innerHTML = '';
+                
+                if (data) {
+                    Object.entries(data).forEach(([id, appointment]) => {
+                        const doctorItem = document.createElement('li');
+                        doctorItem.innerHTML = `${appointment.doctor} - Patient: ${appointment.patientName}, Age: ${appointment.age}, Mobile: ${appointment.mobile}, Date: ${appointment.date}`;
+                        doctorList.appendChild(doctorItem);
+                    });
+                }
+            });
+        }
+        
+        loadAppointments();
+        
+        document.getElementById('add-patient-button').addEventListener('click', function () {
+            const patientName = prompt('Enter patient name:');
+            const contactDetails = prompt('Enter contact details:');
+            const medicalHistory = prompt('Enter medical history:');
+
+            if (patientName && contactDetails && medicalHistory) {
+                const newPatientRef = push(ref(db, 'patients'));
+                set(newPatientRef, { patientName, contactDetails, medicalHistory })
+                .then(() => loadPatients());
+            } else {
+                alert('All fields are required!');
+            }
+        });
+
+        function loadPatients() {
+            onValue(ref(db, 'patients'), snapshot => {
+                const data = snapshot.val();
+                const tableBody = document.querySelector('#patient-table tbody');
+                tableBody.innerHTML = '';
+                
+                if (data) {
+                    Object.entries(data).forEach(([id, patient]) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${patient.patientName}</td>
+                            <td>${patient.contactDetails}</td>
+                            <td>${patient.medicalHistory}</td>
+                            <td><button class="delete-btn" data-id="${id}">Delete</button></td>
+                        `;
+                        row.querySelector('.delete-btn').addEventListener('click', function () {
+                            remove(ref(db, `patients/${id}`)).then(() => loadPatients());
+                        });
+                        tableBody.appendChild(row);
+                    });
+                }
+            });
+        }
+        
+        loadPatients();
+    </script>
+    
+    <footer>
+        <p>&copy; 2025 RK Hospital. All rights reserved.</p>
+    </footer>
+</body>
+</html>
